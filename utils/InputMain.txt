@@ -1,0 +1,33 @@
+35         //numero de informacoes no arquivo
+
+
+86          //numero de dados -1
+5500        //objetivo	 do poço
+1000        //lamina d'água
+200         //zona sem registro de sismica
+5		    // numero de secoes do condutor
+500		    //comprimento do rev de superficie
+5000	    //peso sobre o gancho (maximo)
+65.5	    //densidade do aco
+19.6		//densidade de aco
+2.2			//densidade do gas
+0.1			//gap de seguranca no gradiente
+2.2			//coef de Eaton
+4650		//Vo de Bowers
+8			//coef A de Bowers
+0.85		//coef B de Bowers
+3.13		//coef U de Bowers
+5200 15.3	//Prof e Gradiente de poros RFT1
+5400 15.55	//Prof e Gradiente de poros RFT2
+1500 9.65	//Prof e Gradiente de fratura LOT1
+3000 12.2	//Prof e Gradiente de fratura LOT2
+4500 15.6	//Prof e Gradiente de fratura LOT3
+7.0			//OD rev de producao
+600			//vazao
+15			//viscosidade
+0.95		//Cd para calculo de pressoa hidraulica na broca
+0			//peso sobre a broca
+2.5			//tempo para substituir cada pipe
+90			//comprimento de cada pipe
+100         //valor medio da abrasividade  
+28          //OD do riser 
