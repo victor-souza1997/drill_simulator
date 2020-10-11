@@ -16,13 +16,13 @@ class Fluid{ //classe representado os fluidos
 	public:
 		Fluid(){
 			double fluid_visconsity; //viscosidade comum para todos os fluidos
-		
+		};
 };
 class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtonianos
 
 	void set_visconsity(){
 		fluid_visconsity = theta_300; //viscosidade do fluido newtoniano
-	}
+	};
 
 };
 class Fluid_Elastic: public Fluid{ //classe representado aos fluidos elásticos
@@ -31,7 +31,7 @@ class Fluid_Elastic: public Fluid{ //classe representado aos fluidos elásticos
 	void set_visconsity(){
 		fluid_visconsity = theta_600-theta_300; 
 		fluid_Shear_stress0 = theta_300  - fluid_visconsity;
-	}
+	};
 };
 class Fluid_Power_Law: public Fluid{ //classe repressentando aos fluidos modelados com a leis das potências
 	public:
