@@ -9,10 +9,11 @@ class Well{ //classe para o poço
 	public:				
 	double get_stress(double alpha, double rho_w, double LDA, double rho,double Z){
 		return alpha*(rho_w*LDA+rho*Z);
-	};
+	};//Calcular a tensão de um certo volume ao longo do poço
 	double get_hydrostatic(double rho_f, double z, double z0, double P0){
 		return rho_f*g*(z-z0)+P0;
-	};
+	};// Calculo da hidroestática 
+
 
 };
 class Fluid{ //classe representado os fluidos
@@ -20,6 +21,7 @@ class Fluid{ //classe representado os fluidos
 		double theta_600;
 		double theta_300;
 		double fluid_visconsity;
+		double rho_f;
 		Fluid(double a, double b){
 			theta_300 = a;
 			theta_600 = b;
@@ -28,9 +30,25 @@ class Fluid{ //classe representado os fluidos
 };
 class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtonianos
 	public:
+		double v; //velocidade média do fluido
+		double ID; // Diametro do poço
+		double f; // coeficiente de fricao 
+		double Pf; //Perda de carga 
+		double De; // diâmetro na região anular
 		void set_visconsity(){
 			fluid_visconsity = theta_300; //viscosidade do fluido newtoniano
 		};
+		void set_velocity(){
+			v = q/(2.448*pow(ID,2));
+		}
+		int get_Reynolds(){
+			return 928*rho_f*v*ID/fluid_visconsity;
+		};
+		void set_fluid_loss(){
+			f = 16/get_Reynolds();
+			Pf = f*rho_f*pow(v,2)/(25,8*ID);
+		}
+
 
 };
 class Fluid_Elastic: public Fluid{ //classe representado aos fluidos elásticos
