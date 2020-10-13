@@ -5,6 +5,7 @@
 using namespace std;
 
 double g = 9.8;
+double pi = 3.14;
 class Well{ //classe para o poço
 	public:	
 		
@@ -27,10 +28,13 @@ class Fluid{ //classe representado os fluidos
 		double Re; // Número de Reynolds
 		double f; //Constante de fricção
 		double Perda_f; //A perda será comum ao fluido
-		Fluid(double a, double b){
+		double At; //Área total dos orifícios da broca
+		double Perda_f_b; //perda na broca
+		Fluid(double a, double b, double rho_f, double q){
 			theta_300 = a;
 			theta_600 = b;
-			 //viscosidade comum para todos os fluidos
+			rho_f = rho_f;
+			q = q;
 		};
 		void set_velocity(double D){//Cálculo da velocidade média do fluido, comum a todos os fluidos
 			v =  q/(2.448*pow(D,2));
@@ -40,6 +44,15 @@ class Fluid{ //classe representado os fluidos
 		};
 		void set_friction_Laminar(){// Calculo da fricção laminar, comum a todos os fluidos
 			f = 16/Re;
+		};
+		void set_drill_loss(double Cd){ //perda de carga na broca
+			Perda_f_b = 8.311*pow(10,-5)*rho_f*pow(q,2)/(pow(C_d,2)*pow(At,2))
+		};
+		void set_drill_area(double OD, int n_holes){ //definindo área total da saída dos jatos da broca
+			At = 0;
+			for(int i = 0; i<n_holes; i++){
+				At = At + pow(OD,2)*pi/4
+			};
 		};
 		
 };
