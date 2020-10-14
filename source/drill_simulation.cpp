@@ -16,48 +16,57 @@ class Well{ //classe para o poço
 		return rho_f*g*(z-z0)+P0;
 	};// Calculo da hidroestática 
 
+
 };
 class Fluid{ //classe representado os fluidos
 	public:
+		//Given variables
 		double theta_600;//constante do fluido
 		double theta_300;//constante do fluido
-		double fluid_visconsity;//viscosidade do fluido
+		double At; //Área total dos orifícios da broca
 		double rho_f; //massa específica do fluido
 		double q; //volume por unidade de tempo
+		//calculated variables
+		double fluid_visconsity;//viscosidade do fluido
 		double v; //Velocidade média do fluido
 		double Re; // Número de Reynolds
 		double f; //Constante de fricção
 		double Perda_f; //A perda será comum ao fluido
-		double At; //Área total dos orifícios da broca
 		double Perda_f_b; //perda na broca
-		Fluid(double a, double b, double rho_f, double q){
+		Fluid(double a, double b, double c, double d){
 			theta_300 = a;
 			theta_600 = b;
-			rho_f = rho_f;
-			q = q;
+			rho_f = c;
+			q = d;
+			
 		};
 		void set_velocity(double D){//Cálculo da velocidade média do fluido, comum a todos os fluidos
 			v =  q/(2.448*pow(D,2));
 		};
+
 		void set_Reynolds(double D){//Calculo do número de Reynolds, comum a todos os fluidos
 			Re = 928*rho_f*v*D/fluid_visconsity;
 		};
 		void set_friction_Laminar(){// Calculo da fricção laminar, comum a todos os fluidos
 			f = 16/Re;
 		};
-		void set_drill_loss(double Cd){ //perda de carga na broca
-			Perda_f_b = 8.311*pow(10,-5)*rho_f*pow(q,2)/(pow(C_d,2)*pow(At,2))
+		void set_drill_loss(double C_d){ //perda de carga na broca
+			Perda_f_b = 8.311*pow(10,-5)*rho_f*pow(q,2)/(pow(C_d,2)*pow(At,2));
 		};
 		void set_drill_area(double OD, int n_holes){ //definindo área total da saída dos jatos da broca
 			At = 0;
 			for(int i = 0; i<n_holes; i++){
-				At = At + pow(OD,2)*pi/4
+				At = At + pow(OD,2)*pi/4;
 			};
 		};
 		
 };
 class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtonianos
 	public:
+
+
+		Fluid_Newton(double theta_300, double theta_600, double rho_f, double q) : Fluid(theta_300, theta_600, rho_f, q) {}
+
 		double Perda_f; //Perda de carga 
 		
 		void set_visconsity(){
@@ -80,8 +89,11 @@ class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtoniano
 		}
 
 		double get_fluid_loss(double D){//Cálculo da perda de carga para um determinado solo
-			set_velocity(D);
+			set_visconsity();
+			set_velocity( D);
 			set_Reynolds(D);
+			
+			
 			if(Re<2000) set_friction_Laminar();
 
 			else set_friction_turbulent();
@@ -132,6 +144,8 @@ class Fluid_Elastic: public Fluid{ //classe representado aos fluidos elásticos
 			f = f_i; 
 		}
 		double get_fluid_loss(double D){//Cálculo da perda de carga para um determinado solo
+			set_visconsity();
+			set_Critical_Reynolds();
 			set_velocity(D);
 			set_Reynolds(D);
 			if(Re>Re_c) set_friction_Laminar();
@@ -149,11 +163,19 @@ class Fluid_Power_Law: public Fluid{ //classe repressentando aos fluidos modelad
 		double fluid_n_power_law;
 		double fluid_K_power_law;
 		double Re_c;
+		Fluid_Power_Law(double theta_300, double theta_600, double rho_f, double q) : Fluid(theta_300, theta_600, rho_f, q) {}
+
+		double get_velocity() {return v;};
 		void set_visconsity(double D){
 			fluid_n_power_law = 3.32*log10(theta_600/theta_300); 
 			fluid_K_power_law = 510*theta_300/(pow(510,fluid_n_power_law));
 			fluid_visconsity = fluid_K_power_law/96*pow(D/v,1-fluid_n_power_law)*pow((3+1/fluid_n_power_law)/0.0416,fluid_n_power_law);
 		};	
+
+		void set_Critical_Reynolds(){
+			Re_c = -9188.5*fluid_n_power_law+5947.6;
+			if(Re_c<2100) Re_c = 2100;
+		}
 		void set_friction_turbulent(){ //calculo da friccao turbulenta é feito interativamente
 			double f_i_1 = 0.001;
 			float error = 10;
@@ -168,6 +190,8 @@ class Fluid_Power_Law: public Fluid{ //classe repressentando aos fluidos modelad
 			f = f_i; 
 		};
 		double get_fluid_loss(double D){//Cálculo da perda de carga para um determinado solo
+			set_visconsity(D);
+			set_Critical_Reynolds();
 			set_velocity(D);
 			set_Reynolds(D);
 			if(Re>Re_c) set_friction_Laminar();
@@ -183,20 +207,63 @@ class Fluid_Power_Law: public Fluid{ //classe repressentando aos fluidos modelad
 
 class Drill{ //classe para a broca
 	public:
+		double f1, f2, f3, f4, f5, f6, f7, f8;
+		double a1, a2, a3, a4, a5, a6, a7, a8;
 
+		void set_f1(){f1 = exp(a1*2.303);};
+		void set_f2(double Z){f2 = exp(2.303*a2*(10000-Z));}
+		void set_f3(double Z, double G_p){f3 = exp(2.303*a3*pow(Z,0.69)*(G_p - 9));};
+		void set_f4(double Z, double G_p, double ECD){f4 = exp(2.303*a4*Z*(G_p - ECD));};
+		void set_f5(double WOB, double D_b, double minimal_force){f5 = pow(((WOB/D_b)-minimal_force)/(4-minimal_force), a5);};
+		void set_f6(double N){f6 = pow(N/60,a6);};
+		void set_f7(double h){f7 = exp(-a7*h);};
+		void set_f8(double Fj){f8 = pow(Fj/1000, a8);};
 };
 int main(){
 
 	Well well1;
-	ofstream outfile("hydrostatic.txt");
-	for(double z = 0;z<2000; z=z+0.1){		
-		outfile << z << " " << well1.get_hydrostatic(0.01,z,0,1000) << "\n";//std::endl;
-		cout << z << " " << well1.get_hydrostatic(0.01,z,0,1000) << "\n";
+	double q, rho_f, theta_600, theta_300;
+	q = 200; //m^3/s
+	rho_f = 2;
+	theta_600 = 20;
+	theta_300 = 10;
+	Fluid_Power_Law Fluid1(theta_300, theta_600, rho_f, q);
+	
+	ofstream outfile1("hydrostatic.txt");
+	ofstream outfile2("tunnel_loss.txt");
+	//double DI[4], DO[4];q/Fluid1.get_velocity()
+	double DI[4] = {1,2,3,4};// DO = 3;
+	int i = 0;
+	double Pump = 3000;	
+	for(double z = 0;z<2000; z=z+0.1){
+
+		outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,1000) << "\n";//std::endl;
+		outfile2 << z << " " << Fluid1.get_fluid_loss(DI[i])*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI[i] <<" "<<"\n";//std::endl;
+				
+		//cout<<typeid(300.0).name()<<"\n";
+		
+		if(200.0 == float(z)){
+			i++;	
+		}
+		
+		else if(600.0 == float(z)){
+			i++;	
+		}
+		
+		else if(1000.0 == float(z)){
+			i++;	
+		}
+			
 	};
 
 
+	//cout<<Fluid1.get_fluid_loss(DI)<<"\n";
+
+	//Fluid2.set_Reynolds(DI);
+
 
 	
-	outfile.close();
+	outfile1.close();
+	outfile2.close();
 	return 0;
 	};
