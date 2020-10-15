@@ -40,6 +40,9 @@ class Fluid{ //classe representado os fluidos
 			q = d;
 			
 		};
+		set_flux_rate(){
+			q = DeltaP*pow(D,4)/(128*fluid_visconsity*L)
+		};
 		void set_velocity(double D){//Cálculo da velocidade média do fluido, comum a todos os fluidos
 			v =  q/(2.448*pow(D,2));
 		};
@@ -225,34 +228,35 @@ int main(){
 	double q, rho_f, theta_600, theta_300;
 	q = 200; //m^3/s
 	rho_f = 2;
-	theta_600 = 20;
+	theta_60480 = 20;
 	theta_300 = 10;
 	Fluid_Power_Law Fluid1(theta_300, theta_600, rho_f, q);
 	
 	ofstream outfile1("hydrostatic.txt");
 	ofstream outfile2("tunnel_loss.txt");
+	
 	//double DI[4], DO[4];q/Fluid1.get_velocity()
-	double DI[4] = {1,2,3,4};// DO = 3;
+	double DI[1] = {2};// DO = 3;
 	int i = 0;
-	double Pump = 3000;	
+	double Pump = 10000;	
 	for(double z = 0;z<2000; z=z+0.1){
 
-		outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,1000) << "\n";//std::endl;
-		outfile2 << z << " " << Fluid1.get_fluid_loss(DI[i])*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI[i] <<" "<<"\n";//std::endl;
-				
+		outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,0) << "\n";//std::endl;
+		outfile2 << z << " " << Pump +well1.get_hydrostatic(0.01,z,0,0)- Fluid1.get_fluid_loss(DI[i])*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI[i] <<" "<< well1.get_hydrostatic(0.01,z,0,0)<<" \n";//std::endl;
+	   		
 		//cout<<typeid(300.0).name()<<"\n";
 		
-		if(200.0 == float(z)){
-			i++;	
-		}
+		//if(200.0 == float(z)){
+		//	i++;	
+		//}
 		
-		else if(600.0 == float(z)){
-			i++;	
-		}
+		//else if(600.0 == float(z)){
+		//	i++;	
+		//}
 		
-		else if(1000.0 == float(z)){
-			i++;	
-		}
+		//else if(1000.0 == float(z)){
+		//	i++;	
+		//}
 			
 	};
 
