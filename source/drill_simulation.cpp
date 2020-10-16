@@ -6,18 +6,6 @@ using namespace std;
 
 double g = 9.8;
 double pi = 3.14;
-class Well{ //classe para o poço
-	public:	
-		
-	double get_stress(double alpha, double rho_w, double LDA, double rho,double Z){
-		return alpha*(rho_w*LDA+rho*Z);
-	};//Calcular a tensão de um certo volume ao longo do poço
-	double get_hydrostatic(double rho_f, double z, double z0, double P0){
-		return rho_f*g*(z-z0)+P0;
-	};// Calculo da hidroestática 
-
-
-};
 class Fluid{ //classe representado os fluidos
 	public:
 		//Given variables
@@ -40,9 +28,9 @@ class Fluid{ //classe representado os fluidos
 			q = d;
 			
 		};
-		set_flux_rate(){
-			q = DeltaP*pow(D,4)/(128*fluid_visconsity*L)
-		};
+		//set_flux_rate(){
+		//	q = DeltaP*pow(D,4)/(128*fluid_visconsity*L);
+		//};
 		void set_velocity(double D){//Cálculo da velocidade média do fluido, comum a todos os fluidos
 			v =  q/(2.448*pow(D,2));
 		};
@@ -222,52 +210,112 @@ class Drill{ //classe para a broca
 		void set_f7(double h){f7 = exp(-a7*h);};
 		void set_f8(double Fj){f8 = pow(Fj/1000, a8);};
 };
+
+class Well{ //classe para o poço
+	public:
+		double *Ph = new double[1];//declaracao do pressão estática ao longo do poço. Ponteiro 
+		double *Flux_loss = new double[1];//declaração da perda de pressão ao longo do poço. Ponteiro
+		double *height = new double[1];//declaração de cada etapa da altura do poço. Ponteiro
+		double theta_600, theta_300, D, q, rho_f;
+		
+		Well(double a, double b, double c, double d, double e){
+			rho_f = c;
+			theta_600 = b;
+			theta_300 = a;
+			q = d;
+			D = e; 
+			Ph[0] = 0;
+			Flux_loss[0] = 0;
+			height[0] = 0;
+			//A * a = new A();
+			//Fluid_Newton * Fluid1 = new Fluid_Newton(a, b, c, d);
+	///		(1, 1, 1, 1);
+			
+
+		};
+	public:
+		void set_FLuid(){
+			
+			Fluid_Newton * Fluid1 = new Fluid_Newton(theta_300, theta_600, rho_f, q);
+			cout<<" "<<theta_300<<" "<<theta_600<<"\n";
+		};
+		
+		void add_height(double step, int size){
+			double * temp = new double [size + 1];
+			for (int i = 0; i < size; i++) 
+    		{	
+    			temp[i] = height[i];
+    			//cout<<"counting: "<<i <<" "<<height[i]<<"\n";
+    		}
+    		temp[size] = step;
+    		delete [] height;
+    		height = temp;
+		};
+		
+		void add_Ph(int size){
+			double *temp = new double[size+1];
+			 for (int i = 0; i < size; i++) 
+    			temp[i] = Ph[i];
+    		temp[size] = get_hydrostatic(rho_f, height[size], 0, 0) + temp[size];
+    		delete [] Ph;
+    		Ph = temp;
+		};
+		
+		void add_Fluxloss(int size){
+			double *temp = new double[size+1];
+			 for (int i = 0; i < size; i++) 
+    			temp[i] = Flux_loss[i];
+
+    		temp[size] = Fluid1.get_fluid_loss(D) + temp[size-1];
+    		delete [] Flux_loss;
+    		Flux_loss = temp;
+		};
+
+		double get_stress(double alpha, double rho_w, double LDA, double rho,double Z){
+			return alpha*(rho_w*LDA+rho*Z);
+		};//Calcular a tensão de um certo volume ao longo do poço
+		double get_hydrostatic(double rho_f, double z, double z0, double P0){
+			return rho_f*g*(z-z0)+P0;
+		};// Calculo da hidroestática 
+
+
+};
+
 int main(){
 
-	Well well1;
 	double q, rho_f, theta_600, theta_300;
 	q = 200; //m^3/s
 	rho_f = 2;
-	theta_60480 = 20;
+	theta_600 = 20;
 	theta_300 = 10;
-	Fluid_Power_Law Fluid1(theta_300, theta_600, rho_f, q);
+	double DI = 2;// DO = 3;
 	
-	ofstream outfile1("hydrostatic.txt");
-	ofstream outfile2("tunnel_loss.txt");
+	Well well1(theta_300, theta_600, rho_f, q, DI);
+	
+	//Fluid_Power_Law Fluid1(theta_300, theta_600, rho_f, q);
+	
+	//ofstream outfile1("hydrostatic.txt");
+	//ofstream outfile2("tunnel_loss.txt");
 	
 	//double DI[4], DO[4];q/Fluid1.get_velocity()
-	double DI[1] = {2};// DO = 3;
-	int i = 0;
-	double Pump = 10000;	
-	for(double z = 0;z<2000; z=z+0.1){
-
-		outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,0) << "\n";//std::endl;
-		outfile2 << z << " " << Pump +well1.get_hydrostatic(0.01,z,0,0)- Fluid1.get_fluid_loss(DI[i])*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI[i] <<" "<< well1.get_hydrostatic(0.01,z,0,0)<<" \n";//std::endl;
-	   		
-		//cout<<typeid(300.0).name()<<"\n";
-		
-		//if(200.0 == float(z)){
-		//	i++;	
-		//}
-		
-		//else if(600.0 == float(z)){
-		//	i++;	
-		//}
-		
-		//else if(1000.0 == float(z)){
-		//	i++;	
-		//}
-			
+	
+	double Pump = 10000;
+	int size = 1;	
+	for(double z = 0; z < 1; z=z+0.1){
+		//cout<< "altura : "<<z<<"\n";
+		//outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,0) << "\n";//std::endl;
+		//outfile2 << z << " " << Pump +well1.get_hydrostatic(0.01,z,0,0)- Fluid1.get_fluid_loss(DI)*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI <<" "<< well1.get_hydrostatic(0.01,z,0,0)<<" \n";//std::endl;
+		well1.set_FLuid();
+		well1.add_height(z, size);
+		well1.add_Ph(size);
+		//well1.add_Fluxloss(size);
+		size++;	
 	};
 
 
-	//cout<<Fluid1.get_fluid_loss(DI)<<"\n";
-
-	//Fluid2.set_Reynolds(DI);
-
 
 	
-	outfile1.close();
-	outfile2.close();
+	//outfile1.close();
+//	outfile2.close();
 	return 0;
 	};
