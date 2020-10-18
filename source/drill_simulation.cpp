@@ -26,17 +26,15 @@ class Fluid{ //classe representado os fluidos
 			theta_600 = b;
 			rho_f = c;
 			q = d;
+		};
+		void set_flux_rate(double D, double P_now, double P_before, double L){
+			double DeltaP  = P_now - P_before;
+			q = DeltaP*pow(D,4)/(128*fluid_visconsity*L);
 			
 		};
-		/*
-		set_flux_rate(P_){
-			DeltaP  = P_now - P_before
-			q = DeltaP*pow(D,4)/(128*fluid_visconsity*L);
-		};*/
 		void set_velocity(double D){//Cálculo da velocidade média do fluido, comum a todos os fluidos
 			v =  q/(2.448*pow(D,2));
 		};
-
 		void set_Reynolds(double D){//Calculo do número de Reynolds, comum a todos os fluidos
 			Re = 928*rho_f*v*D/fluid_visconsity;
 		};
@@ -56,16 +54,11 @@ class Fluid{ //classe representado os fluidos
 };
 class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtonianos
 	public:
-
-
 		Fluid_Newton(double theta_300, double theta_600, double rho_f, double q) : Fluid(theta_300, theta_600, rho_f, q) {}
 
 		double Perda_f; //Perda de carga 
 		
-		void set_visconsity(){
-			fluid_visconsity = theta_300; //viscosidade do fluido newtoniano
-		};
-		
+		void set_visconsity(){fluid_visconsity = theta_300;} //viscosidade do fluido newtoniano
 		void set_friction_turbulent(){ //calculo da friccao turbulenta é feito interativamente
 			double f_i_1 = 0.01;
 			float error = 10;
@@ -76,22 +69,16 @@ class Fluid_Newton: public Fluid{ // classe representando aos fluidos newtoniano
 				f_i = f_i_1-F/F_;
 				error = sqrt(pow((f_i_1-f_i),2));
 				f_i_1 = f_i;
-
 			};
 			f = f_i; 
 		}
-
-		double get_fluid_loss(double D){//Cálculo da perda de carga para um determinado solo
+		double get_fluid_loss(double D, double P_now, double P_before, double L){//Cálculo da perda de carga para um determinado solo
 			set_visconsity();
-			set_flux_rate();
-			set_velocity( D);
+			set_flux_rate(D, P_now, P_before, L);
+			set_velocity(D);
 			set_Reynolds(D);
-			
-			
 			if(Re<2000) set_friction_Laminar();
-
 			else set_friction_turbulent();
-	
 			Perda_f =  f*rho_f*pow(v,2)/(25,8*D);
 			return Perda_f;
 		};
@@ -198,7 +185,6 @@ class Fluid_Power_Law: public Fluid{ //classe repressentando aos fluidos modelad
 
 
 	};
-
 class Drill{ //classe para a broca
 	public:
 		double f1, f2, f3, f4, f5, f6, f7, f8;
@@ -213,20 +199,16 @@ class Drill{ //classe para a broca
 		void set_f7(double h){f7 = exp(-a7*h);};
 		void set_f8(double Fj){f8 = pow(Fj/1000, a8);};
 };
-
 class Well{ //classe para o poço
-	
-	
 	private:
 		Fluid_Newton fluid;
 	public:
-
 		double *Ph = new double[1];//declaracao do pressão estática ao longo do poço. Ponteiro 
 		double *Flux_loss = new double[1];//declaração da perda de pressão ao longo do poço. Ponteiro
 		double *height = new double[1];//declaração de cada etapa da altura do poço. Ponteiro
-		double theta_600, theta_300, D, q, rho_f;
-		
-		Well(double a, double b, double c, double d, double e):fluid(a, b, c, d){
+		double theta_600, theta_300, D, q, rho_f;//características do fluido
+		double Pump; // Pressão da bomba no inicio do poço
+		Well(double a, double b, double c, double d, double e, double p):fluid(a, b, c, d){
 			rho_f = c;
 			theta_600 = b;
 			theta_300 = a;
@@ -234,14 +216,12 @@ class Well{ //classe para o poço
 			D = e; 
 			Ph[0] = 0;
 			Flux_loss[0] = 0;
-			height[0] = 0;
+			height[0] = 0.1;
+			Pump = p;
+
 			//A * a = new A();
 			//Fluid_Newton * Fluid1 = new Fluid_Newton(a, b, c, d);
-
-
 		};
-	
-		
 		void add_height(double step, int size){
 			double * temp = new double [size + 1];
 			for (int i = 0; i < size; i++) 
@@ -252,8 +232,8 @@ class Well{ //classe para o poço
     		temp[size] = step;
     		delete [] height;
     		height = temp;
-		};
-		
+		}
+		void set_Pump(double p) {Pump = p;}	
 		void add_Ph(int size){
 			double *temp = new double[size+1];
 			 for (int i = 0; i < size; i++) 
@@ -261,30 +241,29 @@ class Well{ //classe para o poço
     		temp[size] = get_hydrostatic(rho_f, height[size], 0, 0) + temp[size];
     		delete [] Ph;
     		Ph = temp;
-		};
-		
+		}
 		void add_Fluxloss(int size){
-
 			double *temp = new double[size+1];
 			 for (int i = 0; i < size; i++) {
 			 	temp[i] = Flux_loss[i];
-			 	cout<<temp[i]<<"\n";
+			 	//cout<<temp[i]<<"\n";
     		}		
-    		temp[size] = fluid.get_fluid_loss(D) + temp[size-1];
+    		temp[size] = fluid.get_fluid_loss(D, Ph[size-1]-temp[size-1]+Pump, 0, height[size-1]) + temp[size-1];
+    		//cout<< "Profundidade: "<<height[size-1]<< " Pressão: " <<1000 + Ph[size-1] - temp[size] << "\n";
     		delete [] Flux_loss;
     		Flux_loss = temp;
-		};
-
+		}
 		double get_stress(double alpha, double rho_w, double LDA, double rho,double Z){
 			return alpha*(rho_w*LDA+rho*Z);
-		};//Calcular a tensão de um certo volume ao longo do poço
+		}//Calcular a tensão de um certo volume ao longo do poço
 		double get_hydrostatic(double rho_f, double z, double z0, double P0){
 			return rho_f*g*(z-z0)+P0;
-		};// Calculo da hidroestática 
-
-
+		}// Calculo da hidroestática 
+		double get_pressure(int size){
+			//cout<< Pump - Ph[size-1] - Flux_loss[size-1]<<"\n";
+			return Pump + Ph[size-1] - Flux_loss[size-1];
+		}
 };
-
 int main(){
 
 	double q, rho_f, theta_600, theta_300;
@@ -294,24 +273,22 @@ int main(){
 	theta_300 = 10;
 	double DI = 2;// DO = 3;
 	
-	Well well1(theta_300, theta_600, rho_f, q, DI);
+	double Pump = 10000;
+	Well well1(theta_300, theta_600, rho_f, q, DI, Pump);
 	
 	//Fluid_Power_Law Fluid1(theta_300, theta_600, rho_f, q);
-	
 	//ofstream outfile1("hydrostatic.txt");
-	//ofstream outfile2("tunnel_loss.txt");
+	ofstream outfile2("tunnel_loss.txt");
 	
-	//double DI[4], DO[4];q/Fluid1.get_velocity()
 	
-	double Pump = 10000;
 	int size = 1;	
-	for(double z = 0; z < 1; z=z+0.1){
+	for(double z = 0.1; z <= 10; z=z+0.1){
 		//cout<< "altura : "<<z<<"\n";
 		//outfile1 << z << " " << well1.get_hydrostatic(0.01,z,0,0) << "\n";//std::endl;
-		//outfile2 << z << " " << Pump +well1.get_hydrostatic(0.01,z,0,0)- Fluid1.get_fluid_loss(DI)*z <<" "<<Fluid1.get_velocity()/q<<" "<< DI <<" "<< well1.get_hydrostatic(0.01,z,0,0)<<" \n";//std::endl;
 		well1.add_height(z, size);
 		well1.add_Ph(size);
 		well1.add_Fluxloss(size);
+		outfile2 << z << " " << well1.get_pressure(size) <<" "<<" \n";//std::endl;
 		size++;	
 	};
 
